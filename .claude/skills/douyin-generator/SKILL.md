@@ -190,7 +190,7 @@ Timeout: 180 giây.
 ffmpeg -y \
   -i "$FOLDER/index.mp4" \
   -i "$FOLDER/dub_vi.mp3" \
-  -filter_complex "[0:a]volume=0.15[orig];[1:a]volume=1.0[dub];[orig][dub]amix=inputs=2:normalize=0[mix]" \
+  -filter_complex "[0:a]volume=0.10[orig];[1:a]volume=1.0[dub];[orig][dub]amix=inputs=2:normalize=0[mix]" \
   -map 0:v -map "[mix]" \
   -c:v copy -c:a aac -b:a 192k \
   "$FOLDER/output_vi.mp4"
