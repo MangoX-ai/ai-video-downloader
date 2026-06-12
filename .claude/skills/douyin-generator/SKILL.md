@@ -91,8 +91,8 @@ print(f'Text: {d[\"text\"][:120]}...')
 2. **Tự dịch** toàn bộ nội dung sang tiếng Việt tự nhiên, phong cách vlog trẻ:
    - Dịch field `text` ở cấp top-level
    - Dịch từng `text` trong mỗi phần tử `segments[]`
-   - **KHÔNG dịch** từng `word` riêng lẻ — giữ nguyên ký tự Hán để preserve timing
-   - Giữ nguyên toàn bộ cấu trúc JSON: `language`, `language_probability`, `segments[].start/end/words/probability`
+   - Giữ nguyên toàn bộ cấu trúc JSON: `language`, `language_probability`, `segments[].start/end/probability`
+   - **KHÔNG có field `words`** trong transcript — script transcribe chạy `word_timestamps=False`, đừng tự thêm hay generate lại
 3. Dùng **Write tool** ghi kết quả ra `$FOLDER/transcript-vi.json`
 
 ### Bước 3 — Chọn voice tự động
