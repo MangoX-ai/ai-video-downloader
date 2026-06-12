@@ -1,79 +1,90 @@
-# Douyin Downloader
+# douyin-crawl-skills
 
-Tải video không watermark từ Douyin bằng Playwright API interception.
+Claude Code skills để crawl, tải và lồng tiếng Việt cho video Douyin — chạy hoàn toàn tự động, không hỏi lại user.
 
-## Cách hoạt động
+## Skills có sẵn
 
-1. Playwright mở browser, load trang Douyin
-2. Intercept các HTTP response từ feed API (`/aweme/v1/web/...`)
-3. Parse `aweme_list` → trích xuất `play_addr` (URL không watermark)
-4. `aiohttp` + `aiofiles` tải video song song
+| Skill | Mô tả |
+|-------|-------|
+| `/douyin-crawler <url>` | Crawl danh sách video từ profile / feed page Douyin |
+| `/douyin-generator <folder>` | Dịch transcript + TTS + ghép video → `output_vi.mp4` |
 
-Không cần reverse-engineer X-Bogus vì chạy browser thật — Douyin tự tạo signature.
+---
+
+## /douyin-crawler
+
+Crawl trang Douyin → tải luôn video (mặc định 10 video).
+
+```bash
+# Feed page (Tinh Tuyển / jingxuan)
+/douyin-crawler https://www.douyin.com/jingxuan
+
+# Profile người dùng
+/douyin-crawler https://www.douyin.com/user/MS4wLjABAAAA...
+
+# Tải 30 video
+/douyin-crawler https://www.douyin.com/jingxuan --max 30
+```
+
+Dưới hood, skill chạy:
+
+```bash
+douyin/.venv/bin/python3 -m douyin jingxuan --url "<URL>" --max 10 --no-headless
+```
+
+Output: JSON list các video với `aweme_id`, `detail_url`, `author`, `title`.
+
+---
+
+## /douyin-generator
+
+Pipeline đầy đủ: `index.mp4` → `transcript.json` → `transcript-vi.json` → `dub_vi.mp3` → `output_vi.mp4`.
+
+```bash
+/douyin-generator downloads/jingxuan/<video-folder>
+
+# Chỉ định giọng đọc
+/douyin-generator downloads/jingxuan/<video-folder> --voice sg_female_thaotrinh_full_44k-phg.mp3
+
+# Dùng provider khác
+/douyin-generator downloads/jingxuan/<video-folder> --provider vbee
+```
+
+AI tự chọn voice từ `voice/<provider>.csv` dựa trên nội dung video — không hỏi user.
+
+---
+
+## Cấu trúc downloads
+
+```
+downloads/<author>/<video-title>__<id>/
+  ├── index.mp4           ← video gốc
+  ├── metadata.json
+  ├── transcript.json     ← transcript tiếng Trung (Whisper)
+  ├── transcript-vi.json  ← bản dịch tiếng Việt
+  ├── dub_vi.mp3          ← audio TTS
+  └── output_vi.mp4       ← video hoàn chỉnh
+```
+
+---
+
+## Môi trường
+
+- Python venv: `douyin/.venv/bin/python3`
+- OmniVoice TTS server: `http://192.168.1.61:8002`
+- Providers TTS hỗ trợ: OmniVoice (mặc định), Vbee, ElevenLabs, OpenAI
 
 ## Cài đặt
 
 ```bash
-cd douyin-downloader
-
-# Dùng poetry
-poetry install
-poetry run playwright install chromium
-
-# Hoặc pip
-pip install playwright aiohttp aiofiles rich click
-playwright install chromium
-```
-
-## Sử dụng
-
-### Tải từ trang Tinh Tuyển (/jingxuan)
-
-```bash
-python main.py jingxuan
-python main.py jingxuan --max 100 --out ./videos
-python main.py jingxuan --dry-run          # chỉ xem danh sách, không tải
-python main.py jingxuan --no-headless      # hiện browser để debug
-```
-
-### Tải từ profile người dùng
-
-```bash
-python main.py user "https://www.douyin.com/user/MS4wLjABAAAA..."
-python main.py user "https://www.douyin.com/user/xxx" --max 200 --out ./user_videos
-```
-
-## Options
-
-| Option | Mặc định | Mô tả |
-|--------|---------|-------|
-| `--max` | 50/100 | Số video tối đa |
-| `--scroll` | 10 | Số lần scroll (jingxuan) |
-| `--out` | downloads/ | Thư mục lưu |
-| `--concurrency` | 4 | Download song song |
-| `--cookies` | - | File cookies JSON |
-| `--no-headless` | - | Hiện browser |
-| `--dry-run` | - | Chỉ liệt kê |
-
-## Nếu không tìm được video
-
-Douyin yêu cầu đăng nhập để xem một số nội dung. Cách lấy cookies:
-
-1. Chạy với `--no-headless` để browser hiện ra
-2. Đăng nhập thủ công vào Douyin
-3. Export cookies bằng extension [Cookie-Editor](https://cookie-editor.com/) → lưu thành `cookies.json`
-4. Chạy lại với `--cookies cookies.json`
-
-## Cấu trúc file tải về
-
-```
-downloads/
-└── jingxuan/
-    └── {author}__{title}__{aweme_id}.mp4
+cd douyin
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/playwright install chromium
 ```
 
 ## Lưu ý
 
-- Tool này chỉ dành cho mục đích cá nhân / nghiên cứu
-- Tuân thủ ToS của Douyin khi sử dụng
-- Không dùng để tải hàng loạt ở scale lớn
+- Chỉ dùng cho mục đích cá nhân / nghiên cứu
+- Tuân thủ ToS của Douyin
+- Nếu crawl ra 0 video, thêm `--no-headless` để browser hiện lên — có thể cần login hoặc vượt captcha
