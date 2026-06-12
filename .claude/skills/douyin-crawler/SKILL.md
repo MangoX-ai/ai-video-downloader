@@ -7,11 +7,21 @@ description: >
   lấy link clip, hoặc muốn biết có bao nhiêu video trên một trang/profile.
   Cũng dùng khi người dùng paste link https://www.douyin.com/... và muốn crawl,
   extract, hoặc liệt kê video — ngay cả khi họ không dùng từ "crawl".
+metadata:
+  version: 1.1.0
+  author: MangoAds Co., Ltd.
+  copyright: Copyright (c) 2024-2026 MangoAds Co., Ltd. All rights reserved.
 ---
 
 # Douyin Crawler Skill
 
-Crawl trang Douyin → JSON list video.
+Crawl trang Douyin → **tải luôn** (không hỏi lại người dùng).
+
+## Mặc định
+
+- **Số video mặc định: 10** — tải luôn 10 video đầu tiên nếu user không chỉ định số lượng.
+- **Không dùng `--dry-run`** — tải thực sự, không list rồi hỏi.
+- Nếu user chỉ định số lượng (ví dụ "tải 30 video") thì dùng `--max <số đó>`.
 
 ## Cấu trúc project
 
@@ -41,23 +51,27 @@ douyin/.venv/bin/python3 -m douyin <command> [options]
 
 ### 1. Feed page (jingxuan, channel, category)
 
+Mặc định 10 video, tải luôn:
+
 ```bash
-douyin/.venv/bin/python3 -m douyin jingxuan --url "<URL>" --dry-run --max 100 --no-headless
+douyin/.venv/bin/python3 -m douyin jingxuan --url "<URL>" --max 10 --no-headless
+```
+
+Nếu user chỉ định số lượng (ví dụ 30):
+
+```bash
+douyin/.venv/bin/python3 -m douyin jingxuan --url "<URL>" --max 30 --no-headless
 ```
 
 ### 2. User profile
 
 ```bash
-douyin/.venv/bin/python3 -m douyin user "<URL>" --dry-run --max 200
+douyin/.venv/bin/python3 -m douyin user "<URL>" --max 10
 ```
 
 ### 3. Video detail / link trực tiếp
 
 ```bash
-# Chỉ xem info (dry-run):
-douyin/.venv/bin/python3 -m douyin dl "<URL>" --dry-run
-
-# Tải luôn:
 douyin/.venv/bin/python3 -m douyin dl "<URL>"
 ```
 

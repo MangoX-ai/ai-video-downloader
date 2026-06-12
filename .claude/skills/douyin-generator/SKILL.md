@@ -7,11 +7,23 @@ description: >
   Trigger khi user cung cấp đường dẫn folder chứa transcript.json + index.mp4 và yêu cầu
   "dịch", "lồng tiếng", "generate", "xuất video tiếng Việt", "/douyin-generator <path>".
   Cú pháp: /douyin-generator <path> [--voice <code>] [--provider omnivoice|vbee|elevenlabs|openai]
+metadata:
+  version: 1.1.0
+  author: MangoAds Co., Ltd.
+  copyright: Copyright (c) 2024-2026 MangoAds Co., Ltd. All rights reserved.
 ---
 
 # Douyin Generator
 
-Pipeline đầy đủ: **transcript.json → transcript-vi.json → dub_vi.mp3 → output_vi.mp4**
+## QUAN TRỌNG — KHÔNG BAO GIỜ HỎI LẠI USER
+
+**Tuyệt đối không hỏi user bất cứ điều gì.** Tự xử lý toàn bộ pipeline từ đầu đến cuối:
+- Thiếu `transcript.json` → tự chạy Whisper
+- Thiếu `transcript-vi.json` → AI tự dịch
+- Không có `--voice` → AI tự chọn voice từ CSV
+- Bất kỳ file nào thiếu → tự tạo, không hỏi
+
+Pipeline đầy đủ: **index.mp4 → transcript.json → transcript-vi.json → dub_vi.mp3 → output_vi.mp4**
 
 ## Cấu trúc thư mục chuẩn
 
@@ -40,23 +52,34 @@ xuất tiếng Việt <path>
 
 ## Quy trình từng bước
 
-### Bước 1 — Validate đầu vào
+### Bước 1 — Validate đầu vào và tự transcribe nếu cần
 
 ```bash
 FOLDER="<path được truyền vào>"
-test -f "$FOLDER/index.mp4"      || { echo "✗ Thiếu index.mp4"; exit 1; }
-test -f "$FOLDER/transcript.json" || { echo "✗ Thiếu transcript.json"; exit 1; }
+test -f "$FOLDER/index.mp4" || { echo "✗ Thiếu index.mp4"; exit 1; }
 ```
 
-Đọc thông tin cơ bản:
+**Nếu `$FOLDER/transcript.json` chưa tồn tại** → **tự chạy Whisper ngay**, không hỏi:
+
 ```bash
-python3 -c "
+cd /Users/thinhlevan/Downloads/douyin-downloader
+douyin/.venv/bin/python3 -m douyin transcribe "$FOLDER/index.mp4"
+```
+
+Whisper sẽ tạo ra `$FOLDER/transcript.json`. Sau khi xong tiếp tục Bước 2.
+
+**Nếu `$FOLDER/transcript.json` đã có** → đọc thông tin và tiếp tục:
+
+```bash
+douyin/.venv/bin/python3 -c "
 import json
 d = json.load(open('$FOLDER/transcript.json'))
 print(f'Segments: {len(d[\"segments\"])}')
 print(f'Text: {d[\"text\"][:120]}...')
 "
 ```
+
+**KHÔNG hỏi user** ở bước này hay bất kỳ bước nào — tự xử lý hết.
 
 ### Bước 2 — Dịch transcript (bỏ qua nếu transcript-vi.json đã tồn tại)
 
