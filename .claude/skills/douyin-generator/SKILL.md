@@ -184,7 +184,34 @@ asyncio.run(main())
 
 Timeout: 180 giây.
 
-### Bước 5 — Ghép video + audio bằng ffmpeg
+### Bước 5 — Tạo file SRT subtitle
+
+Chạy ngay sau khi có `transcript-vi.json`, **trước khi** ghép video:
+
+```bash
+cd /Users/thinhlevan/Downloads/douyin-downloader
+douyin/.venv/bin/python3 -c "
+import json
+from pathlib import Path
+
+def fmt(s):
+    h = int(s // 3600)
+    m = int((s % 3600) // 60)
+    sec = int(s % 60)
+    ms = int((s - int(s)) * 1000)
+    return f'{h:02d}:{m:02d}:{sec:02d},{ms:03d}'
+
+folder = Path('$FOLDER')
+data = json.loads((folder / 'transcript-vi.json').read_text())
+lines = []
+for i, seg in enumerate(data['segments'], 1):
+    lines.append(f'{i}\n{fmt(seg[\"start\"])} --> {fmt(seg[\"end\"])}\n{seg[\"text\"].strip()}\n')
+(folder / 'subtitle_vi.srt').write_text('\n'.join(lines), encoding='utf-8')
+print(f'SRT: {len(data[\"segments\"])} dòng → subtitle_vi.srt')
+"
+```
+
+### Bước 6 — Ghép video + audio bằng ffmpeg
 
 ```bash
 ffmpeg -y \
@@ -197,7 +224,7 @@ ffmpeg -y \
 ```
 
 Tham số:
-- `volume=0.15` cho tiếng gốc (giảm còn 15% làm nền)
+- `volume=0.10` cho tiếng gốc (giảm còn 10% làm nền)
 - `volume=1.0` cho dub tiếng Việt (full volume)
 - `-c:v copy` giữ nguyên video stream, không re-encode
 
@@ -208,6 +235,7 @@ Tham số:
 
 📁 $FOLDER/
   ├── transcript-vi.json   ← bản dịch tiếng Việt
+  ├── subtitle_vi.srt      ← subtitle tiếng Việt
   ├── dub_vi.mp3           ← audio TTS (<size> bytes)
   └── output_vi.mp4        ← video hoàn chỉnh (<size> MB)
 
